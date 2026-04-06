@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unfall in Halle 3 — Ermittlung</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f2ed;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: #d8d4cc;
+    --border2: #c4bfb5;
+    --text: #1a1a18;
+    --text2: #5a574f;
+    --text3: #8a877f;
+    --danger: #8B2020;
+    --danger-bg: #fdf0f0;
+    --danger-border: #e8a0a0;
+    --ok: #2a5e1e;
+    --ok-bg: #f0f7ec;
+    --ok-border: #90c87a;
+    --warn: #7a4e08;
+    --warn-bg: #fdf5e6;
+    --warn-border: #e8c46a;
+    --info: #0f4c8a;
+    --info-bg: #eef4fc;
+    --info-border: #90b8e8;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .page-header {
+    background: var(--text);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .page-header .badge {
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .page-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .page-header p {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-top: 1px;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---- INTRO ---- */
+  .intro-banner {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    border-left: 4px solid var(--danger);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .intro-banner .stamp {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--danger);
+    margin-bottom: 0.5rem;
+  }
+  .intro-banner h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--danger);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+  .intro-banner p {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.6rem;
+  }
+  .card p {
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--text2);
+  }
+
+  .facts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  @media (min-width: 480px) {
+    .facts-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .fact {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+  }
+  .fact-label { font-size: 10px; color: var(--text3); margin-bottom: 3px; letter-spacing: 0.05em; }
+  .fact-val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  .btn-start {
+    width: 100%;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+    margin-top: 0.5rem;
+    transition: opacity 0.15s;
+  }
+  .btn-start:hover { opacity: 0.85; }
+
+  /* ---- PROGRESS ---- */
+  .progress-wrap {
+    margin-bottom: 1.25rem;
+  }
+  .progress-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .progress-label { font-size: 12px; color: var(--text3); }
+  .progress-count { font-size: 12px; font-weight: 600; color: var(--text); }
+  .progress-track {
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--text);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .dot-nav {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--surface2);
+    color: var(--text3);
+    cursor: default;
+  }
+  .dot.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .dot.correct { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-border); }
+  .dot.wrong { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+
+  /* ---- PUZZLE CARD ---- */
+  .puzzle-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+  .puzzle-header {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .puzzle-number {
+    background: var(--text);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .puzzle-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .puzzle-body { padding: 1.25rem; }
+
+  .evidence-box {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-left: 3px solid var(--warn);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 0.875rem 1rem;
+    margin-bottom: 1.125rem;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .evidence-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--warn);
+    margin-bottom: 0.4rem;
+  }
+
+  .question {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .options { display: flex; flex-direction: column; gap: 7px; margin-bottom: 1rem; }
+  .opt {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text);
+    line-height: 1.5;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--border2); background: var(--surface2); }
+  .opt:disabled { cursor: default; }
+  .opt.correct { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok); font-weight: 500; }
+  .opt.wrong { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+
+  .feedback {
+    border-radius: var(--radius-sm);
+    padding: 0.875rem 1rem;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-bottom: 0.875rem;
+    display: none;
+  }
+  .feedback.ok { background: var(--ok-bg); border: 1px solid var(--ok-border); color: var(--ok); }
+  .feedback.fail { background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger); }
+  .feedback.show { display: block; }
+  .feedback strong { font-weight: 700; display: block; margin-bottom: 4px; }
+
+  .btn-next {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 11px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text);
+    display: none;
+    transition: background 0.1s;
+  }
+  .btn-next:hover { background: var(--border); }
+  .btn-next.show { display: block; }
+
+  /* ---- ABSCHLUSS ---- */
+  .score-hero {
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+  }
+  .score-number {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .score-number.gut { color: var(--ok); }
+  .score-number.mittel { color: var(--warn); }
+  .score-number.schlecht { color: var(--danger); }
+  .score-sub {
+    font-size: 15px;
+    color: var(--text2);
+    font-weight: 500;
+  }
+
+  .ursachen-liste { }
+  .ursache {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .ursache:last-child { border-bottom: none; }
+  .ursache-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .ursache-icon.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-border); }
+  .ursache-icon.fail { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+
+  .ki-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    min-height: 80px;
+  }
+  .ki-loading {
+    color: var(--text3);
+    font-style: italic;
+  }
+
+  .btn-restart {
+    width: 100%;
+    background: var(--text);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: opacity 0.15s;
+  }
+  .btn-restart:hover { opacity: 0.85; }
+
+  /* ---- API KEY ---- */
+  .api-notice {
+    background: var(--info-bg);
+    border: 1px solid var(--info-border);
+    border-radius: var(--radius-sm);
+    padding: 0.875rem 1rem;
+    font-size: 12px;
+    color: var(--info);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  .api-notice strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="badge">Ermittlungsakte</div>
+    <h1>Unfall in Halle 3</h1>
+    <p>Krantransport — Schadensermittlung</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-banner">
+      <div class="stamp">Einsatzmeldung — Montag 06:47 Uhr</div>
+      <h2>Schwerer Unfall</h2>
+      <p>Stahlträger abgestürzt &mdash; Sachschaden 85.000 EUR, 1 Verletzter, Produktion steht still</p>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Lagebericht</div>
+      <p>Beim Verladen eines Stahlträgers in Halle 3 ist die Last abgestürzt. Der Träger hat eine Maschine beschädigt und einen Mitarbeiter am Fuß verletzt. Deine Aufgabe: Finde alle Fehler, die zu diesem Unfall geführt haben.</p>
+    </div>
+
+    <div class="facts-grid">
+      <div class="fact"><div class="fact-label">Last</div><div class="fact-val">Stahlträger, 2,4 t</div></div>
+      <div class="fact"><div class="fact-label">Kran</div><div class="fact-val">Brückenkran, 5 t</div></div>
+      <div class="fact"><div class="fact-label">Anschläger</div><div class="fact-val">2 Personen</div></div>
+      <div class="fact"><div class="fact-label">Schaden</div><div class="fact-val">85.000 EUR</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">So funktioniert die Ermittlung</div>
+      <p>Du arbeitest dich durch 8 Beweisstücke. Jedes zeigt dir einen Ausschnitt vom Unfallhergang. Du entscheidest: War das korrekt — oder war das ein Fehler? Am Ende bekommst du die vollständige Unfallanalyse.</p>
+    </div>
+
+    <button class="btn-start" onclick="startPuzzles()">Ermittlung starten &rarr;</button>
+  </div>
+
+  <!-- PUZZLES -->
+  <div id="screen-puzzles" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-top">
+        <span class="progress-label">Fortschritt</span>
+        <span class="progress-count" id="prog-count">0 / 8</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill" style="width: 0%"></div>
+      </div>
+    </div>
+    <div class="dot-nav" id="dot-nav"></div>
+    <div id="puzzle-area"></div>
+  </div>
+
+  <!-- ABSCHLUSS -->
+  <div id="screen-abschluss" class="screen">
+    <div class="score-hero">
+      <div class="score-number" id="score-num">0/8</div>
+      <div class="score-sub" id="score-sub">Ermittlung abgeschlossen</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Alle Unfallursachen im Überblick</div>
+      <div class="ursachen-liste" id="ursachen-liste"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Abschlussbericht — Einsatzleiter</div>
+      <div class="api-notice">
+        <strong>Hinweis für Lehrkräfte:</strong> Für den personalisierten KI-Abschlussbericht muss ein Anthropic API-Key in der HTML-Datei eingetragen werden (Zeile mit <code>API_KEY</code>). Ohne Key erscheint eine statische Zusammenfassung.
+      </div>
+      <div class="ki-box" id="ki-box"><span class="ki-loading">Bericht wird erstellt...</span></div>
+    </div>
+
+    <button class="btn-restart" onclick="neustarten()">Neue Ermittlung starten</button>
+  </div>
+
+</div>
+
+<script>
+const API_KEY = ''; // Hier deinen Anthropic API-Key eintragen: 'sk-ant-...'
+
+const puzzles = [
+  {
+    titel: "Beweisstück A — Das Anschlagmittel",
+    beweis: "Am Unfallort wurde ein Hebeband aus Polyester gefunden. Es zeigt einen Einschnitt von ca. 3 cm Länge direkt an einer Kante des Stahlträgers. Das Band war laut Etikett für 2.000 kg im Einzelstrang zugelassen.",
+    frage: "Was war falsch an der Wahl des Anschlagmittels?",
+    optionen: [
+      { text: "Das Hebeband war zu kurz für den Träger", richtig: false },
+      { text: "Hebebänder sind für scharfkantige Stahlprofile nicht geeignet — dafür braucht man Ketten", richtig: true },
+      { text: "Das Hebeband hatte die falsche Farbe und gehörte zu einem anderen Betrieb", richtig: false },
+      { text: "Das Hebeband war korrekt — Polyester hält scharfe Kanten problemlos aus", richtig: false }
+    ],
+    feedback_ok: "Richtig. Hebebänder und Rundschlingen sind für scharfkantige oder heiße Lasten nicht geeignet. Für Stahlträger und Profile werden Ketten verwendet, da diese nicht durch Kanten beschädigt werden. (BGI 556, Abschnitt 6)",
+    feedback_fail: "Nicht korrekt. Das entscheidende Problem: Hebebänder dürfen nicht an scharfkantigen Lasten verwendet werden. Die BGI 556 ist eindeutig — für scharfkantige Träger und Profile sind Ketten vorgeschrieben."
+  },
+  {
+    titel: "Beweisstück B — Der Neigungswinkel",
+    beweis: "Fotos vom Anschlagvorgang zeigen: Der Träger wurde mit einem 2-strängigen Gehänge angeschlagen. Die Stränge bildeten einen Winkel von ca. 75° zur Lotrechten. Die Kette war für 2.500 kg Einzelstrangtragfähigkeit ausgelegt.",
+    frage: "Was ist das Problem mit diesem Neigungswinkel?",
+    optionen: [
+      { text: "Bei 75° Neigungswinkel ist die Verwendung unzulässig — die Belastung übersteigt die zulässige Tragfähigkeit", richtig: true },
+      { text: "Ab 75° muss man mehr Stränge verwenden, alles andere ist korrekt", richtig: false },
+      { text: "Der Neigungswinkel ist unkritisch solange die Kette stark genug ist", richtig: false },
+      { text: "Bei 75° gilt noch die volle Tragfähigkeit des Zweistranggehänges", richtig: false }
+    ],
+    feedback_ok: "Korrekt. Bei einem Neigungswinkel über 60° ist die Verwendung des Anschlagmittels unzulässig. Die Tragfähigkeit sinkt so stark, dass auch rechnerisch korrekt dimensionierte Anschlagmittel versagen können. (BGI 556, Abschnitt 14)",
+    feedback_fail: "Leider falsch. Laut BGI 556 gilt: Bei Neigungswinkel über 60° ist die Verwendung unzulässig. Kein Strang hilft hier — das Gehänge darf so nicht eingesetzt werden."
+  },
+  {
+    titel: "Beweisstück C — Die Sichtkontrolle",
+    beweis: "Kollege M. gibt an: 'Ich hab das Hebeband aus dem Regal geholt. Es sah auf den ersten Blick in Ordnung aus. Ich hab's direkt angeschlagen.' Das Band zeigt laut Prüfbericht einen deutlichen Einschnitt und verfärbte Fasern — Zeichen einer früheren Überlastung.",
+    frage: "Welche Pflicht hat der Anschläger vor jedem Einsatz?",
+    optionen: [
+      { text: "Nur neue Anschlagmittel aus dem Lager verwenden, alte wegschmeißen", richtig: false },
+      { text: "Das Anschlagmittel vor dem Gebrauch auf sichtbare Mängel kontrollieren und bei Zweifeln nicht verwenden", richtig: true },
+      { text: "Die jährliche Prüfung durch den Sachkundigen reicht aus — eigene Kontrolle ist nicht nötig", richtig: false },
+      { text: "Anschlagmittel müssen nur vor dem ersten Einsatz des Tages kontrolliert werden", richtig: false }
+    ],
+    feedback_ok: "Genau. Unabhängig von der jährlichen Prüfung muss der Anschläger vor jedem einzelnen Gebrauch eine Sichtkontrolle durchführen. Das ist seine persönliche Schutzpflicht. (BGI 556, Abschnitt 23)",
+    feedback_fail: "Nicht ganz. Die jährliche Prüfung ersetzt nicht die Kontrolle vor dem Gebrauch. Der Anschläger ist verpflichtet, vor jedem Einsatz selbst zu prüfen — das schützt ihn selbst."
+  },
+  {
+    titel: "Beweisstück D — Die Zeichengebung",
+    beweis: "Zeuge berichtet: 'Beide Anschläger haben dem Kranführer gleichzeitig Zeichen gegeben — einer wollte anheben, der andere noch warten.' Der Kranführer hat angehoben. In der Verwirrung stand noch ein Mitarbeiter im Gefahrenbereich.",
+    frage: "Was ist die korrekte Vorgehensweise bei der Zeichengebung?",
+    optionen: [
+      { text: "Beide Anschläger geben Zeichen, der Kranführer entscheidet welches er befolgt", richtig: false },
+      { text: "Nur ein einziger benannter Anschläger darf dem Kranführer Zeichen geben — nach vorheriger Absprache beider", richtig: true },
+      { text: "Zeichen können per Zuruf gegeben werden, Handzeichen sind nur Empfehlung", richtig: false },
+      { text: "Bei zwei Anschlägern gilt das Zeichen desjenigen, der näher am Kran steht", richtig: false }
+    ],
+    feedback_ok: "Richtig. Die BGI 556 ist klar: Nur ein einziger, vorher benannter Anschläger gibt Zeichen an den Kranführer — erst nachdem alle den Gefahrenbereich verlassen haben. (BGI 556, Abschnitt 19)",
+    feedback_fail: "Falsch. Grundsatz: Genau eine Person gibt Zeichen. Wenn zwei gleichzeitig zeichengeben, darf der Kranführer überhaupt nicht reagieren. Im vorliegenden Fall hat er es trotzdem getan — auch das war ein Fehler."
+  },
+  {
+    titel: "Beweisstück E — Der Gefahrenbereich",
+    beweis: "Kameraaufnahmen zeigen: Beim Anheben stand Kollege R. seitlich neben dem Träger, ca. 0,8 m entfernt, zwischen dem Träger und einer Maschinenreihe. Er wollte noch schnell ein Unterlegholz zurechtlegen.",
+    frage: "Was hätte Kollege R. zwingend tun müssen?",
+    optionen: [
+      { text: "Er hätte Sicherheitsschuhe tragen müssen, dann wäre nichts passiert", richtig: false },
+      { text: "Den Gefahrenbereich verlassen, bevor das Hubzeichen gegeben wird — keine Arbeiten im Gefahrenbereich während des Hubvorgangs", richtig: true },
+      { text: "Er hätte sich direkt ans Leitseil stellen sollen, um die Last zu führen", richtig: false },
+      { text: "Die Position 0,8 m neben der Last ist sicher, der Mindestabstand beträgt 0,5 m", richtig: false }
+    ],
+    feedback_ok: "Korrekt. Bevor der Anschläger das Hubzeichen gibt, müssen alle Personen den Gefahrenbereich verlassen haben — ausnahmslos. Das Unterlegholz hätte vorher positioniert werden müssen. (BGI 556, Abschnitt 18)",
+    feedback_fail: "Nicht korrekt. Das Problem: Niemand darf sich im Gefahrenbereich aufhalten, wenn angehoben wird. Das Unterlegholz hätte vorher bereitgelegt werden müssen. Punkt."
+  },
+  {
+    titel: "Beweisstück F — Der Schwerpunkt",
+    beweis: "Der Träger war mit einer eingehängten Schweißvorrichtung versehen, die an einem Ende befestigt war. Der Kranhaken wurde mittig über den Träger positioniert. Beim Anheben hing die Last sofort schief.",
+    frage: "Was hätte der Anschläger vor dem Anschlagen ermitteln müssen?",
+    optionen: [
+      { text: "Die genaue Länge des Trägers, um die richtige Stranglänge zu berechnen", richtig: false },
+      { text: "Gewicht und Schwerpunktlage der Last — der Kranhaken muss senkrecht über dem Schwerpunkt positioniert werden", richtig: true },
+      { text: "Den maximalen Hubweg des Krans, um Kollisionen mit der Decke zu vermeiden", richtig: false },
+      { text: "Die Umgebungstemperatur, da diese die Tragfähigkeit der Kette beeinflusst", richtig: false }
+    ],
+    feedback_ok: "Genau richtig. Vor jedem Hubvorgang müssen Gewicht und Schwerpunktlage der Last bestimmt werden. Nur dann kann der Kranhaken senkrecht über dem Schwerpunkt positioniert werden. (BGI 556, Abschnitt 5)",
+    feedback_fail: "Nicht ganz. Das entscheidende Versäumnis: Der Schwerpunkt wurde nicht ermittelt. Eine unsymmetrische Last hängt immer schief, wenn der Haken nicht über dem Schwerpunkt ist."
+  },
+  {
+    titel: "Beweisstück G — Die Hakensicherung",
+    beweis: "An der Unfallkette wurde festgestellt: Der Haken am unteren Ende hatte keine funktionierende Hakensicherungsklappe. Die Klappe war verbogen und schloss nicht mehr. Dennoch wurde die Kette verwendet.",
+    frage: "Wie hätte korrekt vorgegangen werden müssen?",
+    optionen: [
+      { text: "Kette mit defekter Hakensicherung darf verwendet werden, wenn die Last unter 1 t bleibt", richtig: false },
+      { text: "Die Kette mit defekter Hakensicherung hätte sofort der weiteren Benutzung entzogen werden müssen", richtig: true },
+      { text: "Die Klappe muss nur bei Kettentransport über Personen funktionsfähig sein", richtig: false },
+      { text: "Defekte Hakensicherungen dürfen durch manuelles Festhalten kompensiert werden", richtig: false }
+    ],
+    feedback_ok: "Richtig. Eine Hakensicherung muss einwandfrei funktionieren. Anschlagmittel mit sicherheitsrelevanten Mängeln müssen sofort aus dem Verkehr gezogen und dem Vorgesetzten gemeldet werden. (BGI 556, Abschnitt 16)",
+    feedback_fail: "Falsch. Ein Anschlagmittel mit defekter Sicherheitseinrichtung ist sofort außer Betrieb zu nehmen. Das ist keine Kann-Regelung — das ist Pflicht. Der Anschläger hat hier eine klare Meldepflicht."
+  },
+  {
+    titel: "Beweisstück H — Die Schutzausrüstung",
+    beweis: "Verletzungsbericht: Kollege R. trug Arbeitsschuhe ohne Stahlkappe. Der Stahlträger traf seinen linken Fuß. Ergebnis: Zwei gebrochene Zehen, 6 Wochen Arbeitsausfall. Im Betrieb liegt eine Betriebsanweisung vor, die Sicherheitsschuhe mit Stahlkappe vorschreibt.",
+    frage: "Wessen Pflicht war es, für die korrekte Schutzausrüstung zu sorgen?",
+    optionen: [
+      { text: "Ausschließlich der Unternehmer ist verpflichtet — der Mitarbeiter trägt keine Mitverantwortung", richtig: false },
+      { text: "Sowohl der Unternehmer (Bereitstellung) als auch der Versicherte (bestimmungsgemäße Benutzung) haben Pflichten", richtig: true },
+      { text: "Schutzausrüstung ist freiwillig, solange keine besonderen Gefährdungen vorliegen", richtig: false },
+      { text: "Nur der direkte Vorgesetzte ist verantwortlich, nicht der Mitarbeiter selbst", richtig: false }
+    ],
+    feedback_ok: "Korrekt. Die BGV A1 regelt beide Seiten: Der Unternehmer muss geeignete PSA bereitstellen — und die Versicherten sind verpflichtet, diese zu tragen. Hier gab es eine Betriebsanweisung — sie wurde nicht eingehalten. (BGV A1, §§ 29-30)",
+    feedback_fail: "Nicht vollständig. Die Verantwortung liegt auf beiden Seiten: Der Betrieb stellt PSA bereit, der Mitarbeiter ist verpflichtet, sie zu tragen. Hier gab es eine Betriebsanweisung — sie wurde ignoriert."
+  }
+];
+
+const ursachenKurz = [
+  'Falsches Anschlagmittel (Hebeband statt Kette)',
+  'Unzulässiger Neigungswinkel über 60°',
+  'Keine Sichtkontrolle vor dem Gebrauch',
+  'Mehrere Personen haben gleichzeitig Zeichen gegeben',
+  'Person befand sich beim Anheben im Gefahrenbereich',
+  'Schwerpunkt wurde nicht ermittelt',
+  'Defekte Hakensicherung trotzdem verwendet',
+  'Persönliche Schutzausrüstung nicht getragen'
+];
+
+let aktuell = 0;
+let ergebnisse = [];
+let gewaehlt = {};
+
+function startPuzzles() {
+  ergebnisse = new Array(puzzles.length).fill(null);
+  gewaehlt = {};
+  aktuell = 0;
+  document.getElementById('screen-intro').classList.remove('active');
+  document.getElementById('screen-puzzles').classList.add('active');
+  aktualisierNav();
+  zeigePuzzle(0);
+}
+
+function aktualisierNav() {
+  const nav = document.getElementById('dot-nav');
+  nav.innerHTML = puzzles.map((_, i) => {
+    let cls = 'dot';
+    if (i === aktuell) cls += ' active';
+    else if (ergebnisse[i] === true) cls += ' correct';
+    else if (ergebnisse[i] === false) cls += ' wrong';
+    return `<div class="${cls}">${i + 1}</div>`;
+  }).join('');
+  const beantwortet = ergebnisse.filter(e => e !== null).length;
+  document.getElementById('prog-fill').style.width = (beantwortet / puzzles.length * 100) + '%';
+  document.getElementById('prog-count').textContent = beantwortet + ' / ' + puzzles.length;
+}
+
+function zeigePuzzle(idx) {
+  aktuell = idx;
+  aktualisierNav();
+  const p = puzzles[idx];
+  const beantwortet = ergebnisse[idx] !== null;
+  const letztes = idx === puzzles.length - 1;
+
+  const area = document.getElementById('puzzle-area');
+  area.innerHTML = `
+    <div class="puzzle-card">
+      <div class="puzzle-header">
+        <div class="puzzle-number">${idx + 1}</div>
+        <h3>${p.titel}</h3>
+      </div>
+      <div class="puzzle-body">
+        <div class="evidence-box">
+          <div class="evidence-label">Beweismittel</div>
+          ${p.beweis}
+        </div>
+        <div class="question">${p.frage}</div>
+        <div class="options" id="opts">
+          ${p.optionen.map((o, oi) => {
+            let cls = 'opt';
+            if (beantwortet) {
+              if (o.richtig) cls += ' correct';
+              else if (!ergebnisse[idx] && gewaehlt[idx] === oi) cls += ' wrong';
+            }
+            return `<button class="${cls}" ${beantwortet ? 'disabled' : ''} onclick="antworten(${idx},${oi},${o.richtig})">${o.text}</button>`;
+          }).join('')}
+        </div>
+        <div class="feedback ${beantwortet ? (ergebnisse[idx] ? 'ok' : 'fail') + ' show' : ''}" id="feedback">
+          ${beantwortet ? '<strong>' + (ergebnisse[idx] ? '&#10003; Richtig!' : '&#10007; Nicht ganz.') + '</strong>' + (ergebnisse[idx] ? p.feedback_ok : p.feedback_fail) : ''}
+        </div>
+        <button class="btn-next ${beantwortet ? 'show' : ''}" id="btn-next" onclick="${letztes ? 'zeigeAbschluss()' : 'naechstes(' + idx + ')'}">
+          ${letztes ? 'Zur Auswertung &rarr;' : 'Weiter zu Beweisstück ' + (idx + 2) + ' &rarr;'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function antworten(idx, optIdx, richtig) {
+  gewaehlt[idx] = optIdx;
+  ergebnisse[idx] = richtig;
+
+  const buttons = document.querySelectorAll('#opts .opt');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (puzzles[idx].optionen[i].richtig) btn.classList.add('correct');
+    else if (i === optIdx && !richtig) btn.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.innerHTML = '<strong>' + (richtig ? '&#10003; Richtig!' : '&#10007; Nicht ganz.') + '</strong>' + (richtig ? puzzles[idx].feedback_ok : puzzles[idx].feedback_fail);
+  fb.className = 'feedback ' + (richtig ? 'ok' : 'fail') + ' show';
+
+  aktualisierNav();
+
+  setTimeout(() => {
+    const btn = document.getElementById('btn-next');
+    if (btn) btn.classList.add('show');
+  }, 500);
+}
+
+function naechstes(idx) { zeigePuzzle(idx + 1); }
+
+function zeigeAbschluss() {
+  document.getElementById('screen-puzzles').classList.remove('active');
+  document.getElementById('screen-abschluss').classList.add('active');
+
+  const score = ergebnisse.filter(e => e === true).length;
+  const numEl = document.getElementById('score-num');
+  numEl.textContent = score + '/8';
+  numEl.className = 'score-number ' + (score >= 7 ? 'gut' : score >= 5 ? 'mittel' : 'schlecht');
+
+  const sub = score >= 7
+    ? 'Ausgezeichnet — alle kritischen Fehler erkannt.'
+    : score >= 5
+    ? 'Gut — einige Fehler wurden übersehen.'
+    : 'Noch Luft nach oben — gehe die Fehlerquellen nochmals durch.';
+  document.getElementById('score-sub').textContent = sub;
+
+  const liste = document.getElementById('ursachen-liste');
+  liste.innerHTML = puzzles.map((_, i) => {
+    const ok = ergebnisse[i] === true;
+    return `<div class="ursache">
+      <div class="ursache-icon ${ok ? 'ok' : 'fail'}">${ok ? '&#10003;' : '&#10007;'}</div>
+      <span>${ursachenKurz[i]}</span>
+    </div>`;
+  }).join('');
+
+  ladeKIBericht(score);
+}
+
+async function ladeKIBericht(score) {
+  const box = document.getElementById('ki-box');
+
+  if (!API_KEY) {
+    const fehler = puzzles.map((p, i) => ergebnisse[i] !== true ? ursachenKurz[i] : null).filter(Boolean);
+    const text = score === 8
+      ? 'Alle 8 Fehlerquellen erkannt — sehr gute Leistung. Du kennst die Vorschriften und kannst sie auf einen konkreten Fall anwenden. Das ist genau das, was in der Praxis zählt.'
+      : `${score} von 8 Fragen richtig. Nicht erkannte Fehler: ${fehler.join(', ')}. Gehe diese Punkte nochmals in der BGI 556 nach — besonders die Abschnitte zu Anschlagmitteln, Neigungswinkel und Gefahrenbereich.`;
+    box.textContent = text;
+    return;
+  }
+
+  const fehler = puzzles.map((p, i) => ergebnisse[i] !== true ? ursachenKurz[i] : null).filter(Boolean);
+  const prompt = `Du bist ein erfahrener Sicherheitsbeauftragter in einem Metallbetrieb. Ein Metallbauer-Azubi hat gerade eine Unfallanalyse zu einem Krantransportunfall abgeschlossen. Er hat ${score} von 8 Fragen richtig beantwortet. Nicht erkannte Fehler: ${fehler.length > 0 ? fehler.join(', ') : 'keine — er hat alles richtig'}. Schreib einen kurzen, direkten Abschlussbericht (4-5 Sätze). Nenne was gut war, was noch fehlt und einen konkreten Merksatz für die Praxis. Kein Marketing — direkt wie ein Vorarbeiter.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    box.textContent = data.content?.map(c => c.text || '').join('') || 'Bericht nicht verfügbar.';
+  } catch(e) {
+    box.textContent = 'KI-Bericht nicht verfügbar. Überprüfe deine Ergebnisse anhand der Liste oben.';
+  }
+}
+
+function neustarten() {
+  aktuell = 0;
+  ergebnisse = [];
+  gewaehlt = {};
+  document.getElementById('screen-abschluss').classList.remove('active');
+  document.getElementById('screen-intro').classList.add('active');
+}
+</script>
+</body>
+</html>
